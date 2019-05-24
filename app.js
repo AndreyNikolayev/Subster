@@ -1,27 +1,25 @@
-var request = require('request');
-var cheerio = require('cheerio');
-var config = require('./config');
+var telegram = require('./telegram');
+var schedule = require('node-schedule');
 
-var mangaUrl = 'https://mangalib.me/onepunchman';
+const urlsToTrace = {
+  mangalib: [
+    'https://mangalib.me/onepunchman',
+    'https://mangalib.me/shingeki-no-kyojin'
+  ]
+};
 
-request(mangaUrl, function(err, resp, html) {
-  if (err){
-    console.log(err);
-  }
-  const $ = cheerio.load(html);
-  const latestChapter = $('.chapter-item a').first().text();
-  const telegramMessage = 'Последняя вышедшая глава Ванпанчмена: "'+latestChapter+'"';
-
-  request.post({
-    uri: 'https://api.telegram.org/bot'+ config.telegramBotToken +'/sendMessage',
-    form: {
-      chat_id: config.telegramId,
-      text: telegramMessage
-    }
-  }, function(err, resp, body) {
-    if(err) {
-      console.log(err);
-    }
-    console.log(resp);
-  });
+schedule.scheduleJob(rule, function() {
+  for(var scraperName in urlsToTrace) {
+    const scraper = require('./scraper/' + scraperName);
+    const currentScraperUrls = urlsToTrace[scraperName];
+    currentScraperUrls.forEach(url => {
+      scraper.handle(url).then((result) => {
+        telegram.sendMessage(result).then(() => {
+          console.log('Success');
+        }, (error) => {
+          console.log(error);
+        })
+      });
+    });
+  };
 });

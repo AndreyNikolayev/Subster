@@ -8,6 +8,11 @@ const urlsToTrace = {
   ]
 };
 
+var rule = {
+  hour: 9,
+  minute: 0
+};
+
 schedule.scheduleJob(rule, function() {
   for(var scraperName in urlsToTrace) {
     const scraper = require('./scraper/' + scraperName);
